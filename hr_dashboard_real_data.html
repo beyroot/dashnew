@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد تحلیل منابع انسانی</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Vazir', Tahoma, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .header .subtitle {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            overflow-x: auto;
+            gap: 5px;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 18px 25px;
+            background: transparent;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+            font-size: 1rem;
+            color: #666;
+            white-space: nowrap;
+            min-width: 140px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-tab::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            transition: left 0.4s ease;
+            z-index: -1;
+        }
+
+        .nav-tab.active::before {
+            left: 0;
+        }
+
+        .nav-tab.active {
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(243, 156, 18, 0.4);
+        }
+
+        .dashboard-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .dashboard-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 35px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-top: 5px solid #f39c12;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #f39c12, #e67e22, #d35400);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .stat-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: #555;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-container {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .chart-container:hover {
+            transform: translateY(-5px);
+        }
+
+        .chart-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+            color: #2c3e50;
+            text-align: center;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        .chart-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(90deg, #f39c12, #e67e22);
+            border-radius: 2px;
+        }
+
+        .filters {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 25px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 200px;
+        }
+
+        .filter-item label {
+            font-weight: 600;
+            color: #555;
+            font-size: 1rem;
+        }
+
+        .filter-item select, .filter-item input {
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .filter-item select:focus, .filter-item input:focus {
+            outline: none;
+            border-color: #f39c12;
+            box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.1);
+        }
+
+        .table-container {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            overflow: hidden;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .data-table th {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            padding: 18px 15px;
+            text-align: right;
+            font-weight: 700;
+            font-size: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .data-table td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            text-align: right;
+            background: white;
+            transition: background-color 0.3s ease;
+        }
+
+        .data-table tr:hover td {
+            background: #f8f9fa;
+        }
+
+        .data-table tr:nth-child(even) td {
+            background: #fafafa;
+        }
+
+        .data-table tr:nth-child(even):hover td {
+            background: #f0f0f0;
+        }
+
+        .status-active {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: inline-block;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .status-terminated {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: inline-block;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 18px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            font-size: 16px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #f39c12;
+            box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+            font-size: 1.2rem;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f39c12;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .cards-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            }
+            
+            .nav-tabs {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .filter-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 داشبورد تحلیل منابع انسانی</h1>
+            <div class="subtitle">سیستم جامع مدیریت و تحلیل کارکنان</div>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('overview')">🏠 نمای کلی</button>
+            <button class="nav-tab" onclick="showTab('employees')">👥 کارکنان</button>
+            <button class="nav-tab" onclick="showTab('salary')">💰 حقوق و دستمزد</button>
+            <button class="nav-tab" onclick="showTab('training')">📚 آموزش‌ها</button>
+            <button class="nav-tab" onclick="showTab('analytics')">📈 تحلیل‌های پیشرفته</button>
+        </div>
+
+        <!-- نمای کلی -->
+        <div id="overview" class="dashboard-content active">
+            <div class="cards-grid">
+                <div class="stat-card">
+                    <div class="stat-number">789</div>
+                    <div class="stat-label">کل کارکنان</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">23</div>
+                    <div class="stat-label">دپارتمان فعال</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">572B</div>
+                    <div class="stat-label">مجموع حقوق (ریال)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">342M</div>
+                    <div class="stat-label">متوسط حقوق (ریال)</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-title">توزیع کارکنان بر اساس دپارتمان</div>
+                    <canvas id="departmentChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">توزیع سنی کارکنان</div>
+                    <canvas id="ageChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">نسبت جنسیتی</div>
+                    <canvas id="genderChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">وضعیت استخدام بر اساس دپارتمان</div>
+                    <canvas id="employmentStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- کارکنان -->
+        <div id="employees" class="dashboard-content">
+            <div class="filters">
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <label>📁 بارگذاری فایل Excel:</label>
+                        <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="loadExcelFile(event)">
+                    </div>
+                    <div class="filter-item">
+                        <label>🔍 جستجو:</label>
+                        <input type="text" class="search-box" placeholder="جستجو در نام، دپارتمان، یا سمت..." onkeyup="filterEmployees()">
+                    </div>
+                    <div class="filter-item">
+                        <label>🏢 دپارتمان:</label>
+                        <select id="deptFilter" onchange="filterEmployees()">
+                            <option value="">همه دپارتمان‌ها</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label>📊 وضعیت:</label>
+                        <select id="statusFilter" onchange="filterEmployees()">
+                            <option value="">همه</option>  
+                            <option value="Active">فعال</option>
+                            <option value="Terminated">خاتمه خدمت</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <div id="employeesLoading" class="loading">در حال بارگذاری داده‌ها...</div>
+                <table class="data-table" id="employeesTable" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>کد پرسنلی</th>
+                            <th>نام و نام خانوادگی</th>
+                            <th>دپارتمان</th>
+                            <th>واحد</th>
+                            <th>سمت</th>
+                            <th>گروه سنی</th>
+                            <th>جنسیت</th>
+                            <th>وضعیت</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employeesTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- حقوق و دستمزد -->
+        <div id="salary" class="dashboard-content">
+            <div class="cards-grid">
+                <div class="stat-card">
+                    <div class="stat-number">1,675</div>
+                    <div class="stat-label">رکوردهای حقوقی</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">572B</div>
+                    <div class="stat-label">مجموع پرداخت‌ها</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">342M</div>
+                    <div class="stat-label">متوسط خالص دریافتی</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">15%</div>
+                    <div class="stat-label">رشد نسبت به دوره قبل</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-title">توزیع حقوق بر اساس دپارتمان</div>
+                    <canvas id="salaryByDeptChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">تحلیل اجزای حقوق</div>
+                    <canvas id="salaryComponentsChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">روند حقوق در طول زمان</div>
+                    <canvas id="salaryTrendChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">مقایسه حقوق پایه و کل دریافتی</div>
+                    <canvas id="baseSalaryComparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- آموزش‌ها -->
+        <div id="training" class="dashboard-content">
+            <div class="cards-grid">
+                <div class="stat-card">
+                    <div class="stat-number">142</div>
+                    <div class="stat-label">برنامه‌های آموزشی فعال</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">85%</div>
+                    <div class="stat-label">نرخ تکمیل دوره‌ها</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">2,340</div>
+                    <div class="stat-label">ساعات آموزش</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">4.2/5</div>
+                    <div class="stat-label">رضایت از آموزش‌ها</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-title">نوع آموزش‌ها (داخلی/خارجی)</div>
+                    <canvas id="trainingTypeChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">ساعات آموزش به تفکیک ماه</div>
+                    <canvas id="trainingHoursChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">آموزش بر اساس دپارتمان</div>
+                    <canvas id="trainingByDeptChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">بودجه آموزش‌ها</div>
+                    <canvas id="trainingBudgetChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- تحلیل‌های پیشرفته -->
+        <div id="analytics" class="dashboard-content">
+            <div class="cards-grid">
+                <div class="stat-card">
+                    <div class="stat-number">94.2%</div>
+                    <div class="stat-label">نرخ حفظ کارکنان</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">3.2</div>
+                    <div class="stat-label">متوسط امتیاز عملکرد</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">68</div>
+                    <div class="stat-label">روز متوسط استخدام</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">2.1%</div>
+                    <div class="stat-label">نرخ ترک خدمت</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-title">نرخ حفظ کارکنان در زمان</div>
+                    <canvas id="retentionChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">تحلیل علل ترک خدمت</div>
+                    <canvas id="turnoverReasonsChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">شاخص رضایت کارکنان</div>  
+                    <canvas id="satisfactionChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">پیش‌بینی نیاز به نیرو</div>
+                    <canvas id="forecastChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // متغیرهای سراسری
+        let personnelData = [];
+        let payrollData = [];
+        let isDataLoaded = false;
+
+        // داده‌های پیش‌فرض (شبیه‌سازی شده)
+        const departmentData = [
+            {name: "Maintenance", count: 162, active: 158, terminated: 4},
+            {name: "Facility", count: 120, active: 115, terminated: 5}, 
+            {name: "Call Off", count: 92, active: 92, terminated: 0},
+            {name: "Logistic", count: 84, active: 83, terminated: 1},
+            {name: "HSE", count: 58, active: 57, terminated: 1},
+            {name: "Warehouse", count: 53, active: 53, terminated: 0},
+            {name: "Operation", count: 51, active: 50, terminated: 1},
+            {name: "New Maintenance", count: 35, active: 35, terminated: 0},
+            {name: "Other", count: 34, active: 33, terminated: 1},
+            {name: "Technical", count: 24, active: 22, terminated: 2}
+        ];
+
+        const ageGroups = [
+            {range: "18-24", count: 3},
+            {range: "25-34", count: 192}, 
+            {range: "35-44", count: 408},
+            {range: "45-54", count: 96},
+            {range: "55-64", count: 44},
+            {range: "65+", count: 1}
+        ];
+
+        // نمایش تب‌ها
+        function showTab(tabName) {
+            const tabs = document.querySelectorAll('.dashboard-content');
+            const navTabs = document.querySelectorAll('.nav-tab');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            navTabs.forEach(tab => tab.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            // بارگذاری نمودارهای مربوط به تب فعال
+            setTimeout(() => {
+                switch(tabName) {
+                    case 'overview': loadOverviewCharts(); break;
+                    case 'employees': loadEmployeesTab(); break;
+                    case 'salary': loadSalaryCharts(); break;
+                    case 'training': loadTrainingCharts(); break;
+                    case 'analytics': loadAnalyticsCharts(); break;
+                }
+            }, 100);
+        }
+
+        // بارگذاری نمودارهای نمای کلی
+        function loadOverviewCharts() {
+            // نمودار دپارتمان‌ها
+            const deptCtx = document.getElementById('departmentChart');
+            if (deptCtx && !deptCtx.chart) {
+                deptCtx.chart = new Chart(deptCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: departmentData.map(d => d.name),
+                        datasets: [{
+                            data: departmentData.map(d => d.count),
+                            backgroundColor: [
+                                '#f39c12', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6', 
+                                '#e67e22', '#1abc9c', '#34495e', '#f1c40f', '#95a5a6'
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { 
+                                position: 'bottom',
+                                labels: { padding: 20, usePointStyle: true }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.parsed * 100) / total).toFixed(1);
+                                        return `${context.label}: ${context.parsed} نفر (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // نمودار سنی
+            const ageCtx = document.getElementById('ageChart');
+            if (ageCtx && !ageCtx.chart) {
+                ageCtx.chart = new Chart(ageCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ageGroups.map(a => a.range),
+                        datasets: [{
+                            label: 'تعداد کارکنان',
+                            data: ageGroups.map(a => a.count),
+                            backgroundColor: 'rgba(243, 156, 18, 0.8)',
+                            borderColor: '#f39c12',
+                            borderWidth: 2,
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { 
+                                beginAtZero: true,
+                                grid: { color: 'rgba(0,0,0,0.1)' }
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // نمودار جنسیت
+            const genderCtx = document.getElementById('genderChart');
+            if (genderCtx && !genderCtx.chart) {
+                genderCtx.chart = new Chart(genderCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['مرد', 'زن'],
+                        datasets: [{
+                            data: [783, 6],
+                            backgroundColor: ['#3498db', '#e74c3c'],
+                            borderWidth: 3,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { 
+                                position: 'bottom',
+                                labels: { padding: 20, usePointStyle: true }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.parsed * 100) / total).toFixed(1);
+                                        return `${context.label}: ${context.parsed} نفر (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // نمودار وضعیت استخدام
+            const statusCtx = document.getElementById('employmentStatusChart');
+            if (statusCtx && !statusCtx.chart) {
+                statusCtx.chart = new Chart(statusCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: departmentData.slice(0, 6).map(d => d.name),
+                        datasets: [
+                            {
+                                label: 'فعال',
+                                data: departmentData.slice(0, 6).map(d => d.active),
+                                backgroundColor: 'rgba(46, 204, 113, 0.8)',
+                                borderColor: '#2ecc71',
+                                borderWidth: 2
+                            },
+                            {
+                                label: 'خاتمه خدمت',
+                                data: departmentData.slice(0, 6).map(d => d.terminated),
+                                backgroundColor: 'rgba(231, 76, 60, 0.8)',
+                                borderColor: '#e74c3c',
+                                borderWidth: 2
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { 
+                                position: 'top',
+                                labels: { padding: 20, usePointStyle: true }
+                            }
+                        },
+                        scales: {
+                            y: { 
+                                beginAtZero: true,
+                                stacked: true,
+                                grid: { color: 'rgba(0,0,0,0.1)' }
+                            },
+                            x: {
+                                stacked: true,
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // بارگذاری تب کارکنان
+        function loadEmployeesTab() {
+            if (!isDataLoaded) {
+                document.getElementById('employeesLoading').innerHTML = 
+                    'لطفاً فایل Excel را بارگذاری کنید تا اطلاعات کارکنان نمایش داده شود.';
+            }
+        }
+
+        // بارگذاری فایل Excel
+        async function loadExcelFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const loading = document.getElementById('employeesLoading');
+            loading.style.display = 'block';
+            loading.innerHTML = 'در حال پردازش فایل Excel...';
+
+            try {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const workbook = XLSX.read(e.target.result, {type: 'binary'});
+                    
+                    // خواندن شیت Personnel
+                    if (workbook.SheetNames.includes('Personnel')) {
+                        personnelData = XLSX.utils.sheet_to_json(workbook.Sheets['Personnel']);
+                        console.log('Personnel data loaded:', personnelData.length, 'records');
+                    }
+                    
+                    // خواندن شیت pay
+                    if (workbook.SheetNames.includes('pay')) {
+                        payrollData = XLSX.utils.sheet_to_json(workbook.Sheets['pay']);
+                        console.log('Payroll data loaded:', payrollData.length, 'records');
+                    }
+                    
+                    if (personnelData.length > 0) {
+                        loadEmployeesTable();
+                        populateFilters();
+                        isDataLoaded = true;
+                        loading.style.display = 'none';
+                        document.getElementById('employeesTable').style.display = 'table';
+                    } else {
+                        loading.innerHTML = 'خطا در بارگذاری داده‌ها. لطفاً فایل صحیح را انتخاب کنید.';
+                    }
+                };
+                reader.readAsBinaryString(file);
+            } catch (error) {
+                console.error('Error loading Excel file:', error);
+                loading.innerHTML = 'خطا در پردازش فایل. لطفاً دوباره تلاش کنید.';
+            }
+        }
+
+        // بارگذاری جدول کارکنان
+        function loadEmployeesTable() {
+            const tbody = document.getElementById('employeesTableBody');
+            tbody.innerHTML = '';
+
+            personnelData.forEach((emp, index) => {
+                if (index < 100) { // محدود کردن به 100 رکورد اول برای عملکرد بهتر
+                    const row = tbody.insertRow();
+                    const status = emp['Employment Status'] === 'Active' ? 'فعال' : 'خاتمه خدمت';
+                    const statusClass = emp['Employment Status'] === 'Active' ? 'status-active' : 'status-terminated';
+                    
+                    row.innerHTML = `
+                        <td>${emp['Personnel CODE'] || '-'}</td>
+                        <td>${emp['Full Name'] || '-'}</td>
+                        <td>${emp['Department'] || '-'}</td>
+                        <td>${emp['Unit'] || '-'}</td>
+                        <td>${emp['Position'] || '-'}</td>
+                        <td>${emp['Age'] || '-'}</td>
+                        <td>${emp['Gender'] === 'Male' ? 'مرد' : emp['Gender'] === 'Female' ? 'زن' : emp['Gender'] || '-'}</td>
+                        <td><span class="${statusClass}">${status}</span></td>
+                        <td><button class="btn-primary" onclick="viewProfile('${emp['Personnel CODE']}')">مشاهده</button></td>
+                    `;
+                }
+            });
+        }
+
+        // پر کردن فیلترها
+        function populateFilters() {
+            const deptFilter = document.getElementById('deptFilter');
+            deptFilter.innerHTML = '<option value="">همه دپارتمان‌ها</option>';
+            
+            const departments = [...new Set(personnelData.map(emp => emp.Department))].filter(Boolean);
+            departments.forEach(dept => {
+                const option = document.createElement('option');
+                option.value = dept;
+                option.textContent = dept;
+                deptFilter.appendChild(option);
+            });
+        }
+
+        // فیلتر کارکنان
+        function filterEmployees() {
+            if (!isDataLoaded) return;
+
+            const searchTerm = document.querySelector('.search-box').value.toLowerCase();
+            const deptFilter = document.getElementById('deptFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const tbody = document.getElementById('employeesTableBody');
+            const rows = tbody.querySelectorAll('tr');
+
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const name = cells[1].textContent.toLowerCase();
+                const dept = cells[2].textContent;
+                const status = cells[7].textContent;
+
+                const matchesSearch = name.includes(searchTerm) || 
+                                    cells[0].textContent.includes(searchTerm) ||
+                                    dept.toLowerCase().includes(searchTerm);
+                const matchesDept = !deptFilter || dept === deptFilter;
+                const matchesStatus = !statusFilter || 
+                                    (statusFilter === 'Active' && status.includes('فعال')) ||
+                                    (statusFilter === 'Terminated' && status.includes('خاتمه'));
+
+                row.style.display = matchesSearch && matchesDept && matchesStatus ? '' : 'none';
+            });
+        }
+
+        // نمودارهای حقوق
+        function loadSalaryCharts() {
+            // نمودار حقوق بر اساس دپارتمان (شبیه‌سازی)
+            const salaryDeptCtx = document.getElementById('salaryByDeptChart');
+            if (salaryDeptCtx && !salaryDeptCtx.chart) {
+                salaryDeptCtx.chart = new Chart(salaryDeptCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['مدیریت', 'فنی', 'عملیات', 'نگهداری', 'HSE', 'مالی'],
+                        datasets: [{
+                            label: 'متوسط حقوق (میلیون ریال)',
+                            data: [450, 380, 320, 280, 300, 350],
+                            backgroundColor: 'rgba(243, 156, 18, 0.8)',
+                            borderColor: '#f39c12',
+                            borderWidth: 2,
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { 
+                                beginAtZero: true,
+                                grid: { color: 'rgba(0,0,0,0.1)' }
+                            },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+
+            // سایر نمودارهای حقوق...
+            loadSalaryComponentsChart();
+            loadSalaryTrendChart();
+            loadBaseSalaryComparisonChart();
+        }
+
+        function loadSalaryComponentsChart() {
+            const ctx = document.getElementById('salaryComponentsChart');
+            if (ctx && !ctx.chart) {
+                ctx.chart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['حقوق پایه', 'اضافه کار', 'مزایا', 'بن و کمک هزینه'],
+                        datasets: [{
+                            data: [60, 15, 20, 5],
+                            backgroundColor: ['#3498db', '#e74c3c', '#2ecc71', '#f39c12'],
+                            borderWidth: 3,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            }
+        }
+
+        function loadSalaryTrendChart() {
+            const ctx = document.getElementById('salaryTrendChart');
+            if (ctx && !ctx.chart) {
+                ctx.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور'],
+                        datasets: [{
+                            label: 'متوسط حقوق (میلیون ریال)',
+                            data: [320, 325, 330, 335, 340, 342],
+                            borderColor: '#2ecc71',
+                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: false }
+                        }
+                    }
+                });
+            }
+        }
+
+        function loadBaseSalaryComparisonChart() {
+            const ctx = document.getElementById('baseSalaryComparisonChart');
+            if (ctx && !ctx.chart) {
+                ctx.chart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['مدیر', 'کارشناس ارشد', 'کارشناس', 'تکنسین', 'کارگر'],
+                        datasets: [
+                            {
+                                label: 'حقوق پایه',
+                                data: [280, 200, 150, 120, 100],
+                                backgroundColor: 'rgba(52, 152, 219, 0.8)'
+                            },
+                            {
+                                label: 'کل دریافتی',
+                                data: [450, 320, 240, 190, 160],
+                                backgroundColor: 'rgba(243, 156, 18, 0.8)'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'top' }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+        }
+
+        // نمودارهای آموزش
+        function loadTrainingCharts() {
+            const trainingTypeCtx = document.getElementById('trainingTypeChart');
+            if (trainingTypeCtx && !trainingTypeCtx.chart) {
+                trainingTypeCtx.chart = new Chart(trainingTypeCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['داخلی', 'خارجی'],
+                        datasets: [{
+                            data: [60, 40],
+                            backgroundColor: ['#2ecc71', '#f39c12'],
+                            borderWidth: 3,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+            }
+
+            // سایر نمودارهای آموزش
+            loadTrainingHoursChart();
+            loadTrainingByDeptChart();
+            loadTrainingBudgetChart();
+        }
+
+        function loadTrainingHoursChart() {
+            const ctx = document.getElementById('trainingHoursChart');
+            if (ctx && !ctx.chart) {
+                ctx.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور'],
+                        datasets: [{
+                            label: 'ساعات آموزش',
+                            data: [180, 220, 260, 310, 280, 240],
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+        }
+
+        function loadTrainingByDeptChart() {
+            const ctx = document.getElementById('trainingByDeptChart');
+            if (ctx && !ctx.chart) {
+                ctx.chart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['نگهداری', 'عملیات', 'HSE', 'فنی', 'مدیریت'],
+                        datasets: [{
+                            label: 'تعداد کارکنان آموزش دیده',
+                            data: [45, 38, 32, 28, 15],
+                            backgroundColor: 'rgba(155, 89, 182, 0.8)',
+                            borderColor: '#9b59b6',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+        }
+
+        function loadTrainingBudgetChart() {
+            const ctx = document.getElementById('trainingBudgetChart');
+            if (ctx && !ctx.chart) {
+                ctx.chart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['آموزش فنی', 'ایمنی و بهداشت', 'مدیریتی', 'زبان', 'کامپیوتر'],
+                        datasets: [{
+                            data: [35, 25, 20, 12, 8],
+                            backgroundColor: ['#e74c3c', '#f39c12', '#2ecc71', '#3498db', '#9b59b6'],
+                            borderWidth: 3,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+            }
+        }
+
+        // نمودارهای تحلیلی
+        function loadAnalyticsCharts() {
+            const retentionCtx = document.getElementById('retentionChart');
+            if (retentionCtx && !retentionCtx.chart) {
+                retentionCtx.chart = new Chart(retentionCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['1400', '1401', '1402', '1403'],
+                        datasets: [{
+                            label: 'نرخ حفظ کارکنان (%)',
+                            data: [88, 91, 93, 94.2],
+                            borderColor: '#2ecc71',
+                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: { 
+                            y: { 
+                                beginAtZero: false,
+                                min: 85,
+                                max: 100
+                            } 
+                        }
+                    }
+                });
+            }
+
+            // سایر نمودارهای تحلیلی
+            loadTurnoverReasonsChart();
+            loadSatisfactionChart();
+            loadForecastChart();
+        }
+
+        function loadTurnoverReasonsChart() {
+            const ctx = document.getElementById('turnoverReasonsChart');
+            if (ctx && !ctx.chart) {
+                ctx.chart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['پایان قرارداد', 'بازنشستگی', 'استعفا', 'اخراج', 'سایر'],
+                        datasets: [{
+                            data: [40, 25, 20, 10, 5],
+                            backgroundColor: ['#e74c3c', '#f39c12', '#3498db', '#9b59b6', '#95a5a6'],
+                            borderWidth: 3,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+            }
+        }
+
+        function loadSatisfactionChart() {
+            const ctx = document.getElementById('satisfactionChart');
+            if (ctx && !ctx.chart) {
+                ctx.chart = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['حقوق و مزایا', 'محیط کار', 'رشد شغلی', 'مدیریت', 'تعادل کار-زندگی'],
+                        datasets: [{
+                            label: 'امتیاز رضایت',
+                            data: [3.2, 3.8, 3.1, 3.5, 3.3],
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                            pointBackgroundColor: '#3498db'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 5
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function loadForecastChart() {
+            const ctx = document.getElementById('forecastChart');
+            if (ctx && !ctx.chart) {
+                ctx.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['1403', '1404', '1405', '1406', '1407'],
+                        datasets: [
+                            {
+                                label: 'پیش‌بینی نیاز',
+                                data: [789, 820, 850, 880, 910],
+                                borderColor: '#e74c3c',
+                                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                                borderDash: [5, 5]
+                            },
+                            {
+                                label: 'نیروی موجود',
+                                data: [789, 795, null, null, null],
+                                borderColor: '#2ecc71',
+                                backgroundColor: 'rgba(46, 204, 113, 0.1)'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: { y: { beginAtZero: false } }
+                    }
+                });
+            }
+        }
+
+        // مشاهده پروفایل کارمند
+        function viewProfile(code) {
+            alert(`مشاهده پروفایل کارمند با کد: ${code}\n\nاین قابلیت در نسخه کامل پیاده‌سازی می‌شود.`);
+        }
+
+        // راه‌اندازی اولیه
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOverviewCharts();
+            
+            // شبیه‌سازی بارگذاری تدریجی
+            setTimeout(() => {
+                document.getElementById('employeesLoading').innerHTML = 
+                    '📁 لطفاً فایل Excel خود را بارگذاری کنید';
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
